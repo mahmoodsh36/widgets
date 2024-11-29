@@ -27,6 +27,11 @@ class DMenuPopup(Gtk.Window):
         self.listbox.set_activate_on_single_click(True)
         self.listbox.connect("row-activated", self.on_item_selected)
 
+        # Wrap the list box in a scrollable window
+        self.scrollable = Gtk.ScrolledWindow()
+        self.scrollable.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        self.scrollable.add(self.listbox)
+
         # Add key press event to handle enter key
         self.connect("key-press-event", self.on_key_press)
 
@@ -41,7 +46,7 @@ class DMenuPopup(Gtk.Window):
         # Main layout
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         box.pack_start(self.entry, False, False, 0)
-        box.pack_start(self.listbox, True, True, 0)
+        box.pack_start(self.scrollable, True, True, 0)
         self.add(box)
 
     def update_items(self, items):
@@ -63,7 +68,7 @@ class DMenuPopup(Gtk.Window):
     def on_item_selected(self, listbox, row):
         """Handle the item selection."""
         label = row.get_child()
-        print(f"Selected: {label.get_text()}")  # Handle the selection action
+        print(label.get_text())  # Handle the selection action
         self.destroy()  # Close the popup after selection
 
     def on_key_press(self, widget, event):
