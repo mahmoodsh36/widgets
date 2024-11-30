@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 import sys
 import select
@@ -46,11 +47,12 @@ class DMenuPopup(Gtk.Window):
 
         # Debouncing timer
         self.last_change_time = 0
-        self.debounce_timeout = 0.1  # Time in seconds (300 ms)
+        self.debounce_timeout = 0  # Time in seconds (300 ms)
 
     def update_items(self, items):
         """Update the listbox with filtered items."""
         children = self.listbox.get_children()
+
 
         # Update existing rows
         for i, row in enumerate(children):
@@ -94,10 +96,13 @@ class DMenuPopup(Gtk.Window):
             search_text = entry.get_text().lower()
             if search_text:
                 self.filtered_items = self.get_fuzzy_matches(search_text)
-                self.update_items(self.filtered_items)
+                GLib.idle_add(
+                    lambda: self.update_items(self.filtered_items))
+                # self.update_items(self.filtered_items)
             else:
                 self.filtered_items = self.items
-                self.update_items(self.filtered_items)
+                GLib.idle_add(
+                    lambda: self.update_items(self.filtered_items))
 
     def get_fuzzy_matches(self, search_text):
         """Return the closest matches using difflib."""
