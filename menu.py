@@ -3,19 +3,27 @@
 import sys
 import select
 import time
-from gi.repository import Gtk, Gdk, GLib
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk, Gdk, GLib, GObject, Gio
 import difflib
+
+class Item(GObject.GObject):
+    text = GObject.Property(type=str)
+    def __init__(self):
+        GObject.GObject.__init__(self)
 
 class DMenuPopup(Gtk.Window):
     def __init__(self, items=None):
         super().__init__()
-        self.set_title("Dmenu-like Popup")
-        self.set_default_size(400, 300)
+        self.parent = Gtk.Window()
+        self.set_title("popup")
+        self.set_default_size(400, 500)
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_decorated(False)
-        self.set_keep_above(True)
+        # self.set_keep_above(True)
         self.set_type_hint(Gdk.WindowTypeHint.POPUP_MENU)
-        self.set_transient_for(None)
+        self.set_transient_for(self.parent)
 
         self.entry = Gtk.Entry()
         self.entry.connect("changed", self.on_entry_changed)
@@ -37,6 +45,16 @@ class DMenuPopup(Gtk.Window):
         else:
             self.items = ["Option 1", "Option 2", "Option 3", "Option 4"]
 
+        self.liststore = Gio.ListStore()
+        item1 = Item()
+        item2 = Item()
+        item1.text = "hello"
+        item2.text = "hey"
+        self.liststore.append(item1)
+        self.liststore.append(item2)
+        # self.listbox.bind_model(self.liststore)
+        self.listbox.bind_model(self.liststore, self.create_widget_func)
+
         self.filtered_items = self.items
         self.update_items(self.filtered_items)
 
@@ -49,30 +67,28 @@ class DMenuPopup(Gtk.Window):
         self.last_change_time = 0
         self.debounce_timeout = 0  # Time in seconds (300 ms)
 
+    def create_widget_func(self, item):
+        label = Gtk.Label(label=item.text)
+        label.set_markup(self.highlight_matches(item.text))
+        return label
+
     def update_items(self, items):
-        """Update the listbox with filtered items."""
-        children = self.listbox.get_children()
+        """update the listbox with filtered items."""
+        # children = self.listbox.get_children()
 
+        self.liststore.remove_all()
 
-        # Update existing rows
-        for i, row in enumerate(children):
-            if i < len(items):
-                label = row.get_child()
-                label.set_markup(self.highlight_matches(items[i]))
-            else:
-                self.listbox.remove(row)
+        mylist = []
+        for i in range(len(items)):
+            x = Item()
+            x.text = items[i]
+            mylist.append(x)
+        self.liststore.splice(0, 0, mylist)
 
-        # Add new items (if any)
-        for i in range(len(children), len(items)):
-            label = Gtk.Label(label=self.highlight_matches(items[i]))
-            row = Gtk.ListBoxRow()
-            row.add(label)
-            self.listbox.add(row)
-
-        self.listbox.show_all()
+        # self.listbox.show_all()
 
     def highlight_matches(self, item):
-        """Highlight the matching substring in the item using Pango markup."""
+        """highlight the matching substring in the item using Pango markup."""
         search_text = self.entry.get_text().lower()
         if search_text:
             start_idx = item.lower().find(search_text)
@@ -89,7 +105,7 @@ class DMenuPopup(Gtk.Window):
         return item  # Return item without highlighting if no match
 
     def on_entry_changed(self, entry):
-        """Trigger filtering with debounce."""
+        """trigger filtering with debounce."""
         current_time = time.time()
         if current_time - self.last_change_time > self.debounce_timeout:
             self.last_change_time = current_time
@@ -105,18 +121,30 @@ class DMenuPopup(Gtk.Window):
                     lambda: self.update_items(self.filtered_items))
 
     def get_fuzzy_matches(self, search_text):
-        """Return the closest matches using difflib."""
-        matches = difflib.get_close_matches(search_text, self.items, n=5, cutoff=0.1)
+        """return the closest matches using difflib."""
+        # matches = difflib.get_close_matches(search_text, self.items, n=10, cutoff=0.1)
+        # return matches
+        parts = search_text.split(' ')
+        matches = []
+        for item in self.items:
+            match = True
+            for part in parts:
+                if not part in item:
+                    match = False
+            if match:
+                matches.append(item)
         return matches
 
     def on_item_selected(self, listbox, row):
-        """Handle the item selection."""
+        """handle the item selection."""
         label = row.get_child()
         print(label.get_text())  # Handle the selection action
         self.destroy()
 
     def on_key_press(self, widget, event):
-        """Handle key press events."""
+        """handle key press events."""
+        if event.keyval == Gdk.KEY_Escape:
+            self.destroy()
         if event.keyval == Gdk.KEY_Return:
             selected_row = self.listbox.get_selected_row()
             if selected_row:
@@ -129,15 +157,15 @@ class DMenuPopup(Gtk.Window):
             self.destroy()
 
 def read_stdin():
-    """Read items from stdin, one per line. Returns empty list if no input is available."""
+    """read items from stdin, one per line. returns empty list if no input is available."""
     items = []
     if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
         for line in sys.stdin:
-            items.append(line.strip())  # Add item to the list
+            items.append(line.strip())
     return items
 
 if __name__ == "__main__":
-    items = read_stdin()  # Get items from stdin (if provided)
+    items = read_stdin()
     if not items:
         items = ["Option 1", "Option 2", "Option 3", "Option 4"]
 
