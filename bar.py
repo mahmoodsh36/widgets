@@ -2,7 +2,7 @@ import subprocess
 import re
 from datetime import datetime
 
-from gi.repository import Gtk, Gdk, GtkLayerShell, GLib
+from gi.repository import Gtk, Gdk, GtkLayerShell, GLib, Gio
 import hyprland
 
 class VolumeSlider(Gtk.Box):
@@ -25,8 +25,10 @@ class SystemBar(Gtk.Window):
         super().__init__()
         screen = Gdk.Screen.get_default()
         width = screen.get_width()
-        self.set_default_size(width, 40)
+        self.set_size_request(width, -1)
         self.set_title("SystemBar")
+        self.set_vexpand(False)
+        self.set_hexpand(False)
 
         # initialize gtk layer shell
         GtkLayerShell.init_for_window(self)
@@ -41,7 +43,7 @@ class SystemBar(Gtk.Window):
         self.add(self.box)
 
         # workspace buttons container
-        self.workspace_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        self.workspace_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=3)
         self.box.pack_start(self.workspace_box, False, False, 0)
 
         # window title label
@@ -71,7 +73,7 @@ class SystemBar(Gtk.Window):
         hyprland.add_listener(handler)
 
     def update_workspace_buttons(self):
-        """Fetch the current workspace information and create buttons for each workspace."""
+        """fetch the current workspace information and create buttons for each workspace."""
         result = subprocess.run(["hyprctl", "workspaces"], capture_output=True, text=True)
         workspaces = self.parse_workspaces(result.stdout)
 
@@ -89,23 +91,6 @@ class SystemBar(Gtk.Window):
             button = Gtk.ToggleButton(label=str(workspace['id']))
             button.set_active(workspace['id'] == current_workspace)
             button.connect("clicked", self.on_workspace_button_clicked, workspace['id'])
-
-            # Apply custom styling
-            css_provider = Gtk.CssProvider()
-            css_provider.load_from_data(b"""
-                togglebutton {
-                    border-radius: 10px;
-                    padding: 5px 10px;
-                    background: #444;
-                    color: white;
-                }
-                togglebutton:checked {
-                    background: #007bff;
-                    color: white;
-                }
-            """)
-            style_context = button.get_style_context()
-            style_context.add_provider(css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER)
 
             self.workspace_buttons.append(button)
             self.workspace_box.pack_start(button, False, False, 0)
@@ -150,4 +135,11 @@ if __name__ == "__main__":
     window = SystemBar()
     window.connect("destroy", Gtk.main_quit)
     window.show_all()
+
+    css_provider = Gtk.CssProvider()
+    css_provider.load_from_file(Gio.File.new_for_path('main.css'))
+    Gtk.StyleContext.add_provider_for_screen(
+        Gdk.Screen.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER
+    )
+
     Gtk.main()

@@ -8,6 +8,7 @@ python3.pkgs.buildPythonApplication {
   src = src;
   buildInputs = [
     gtk3
+    gtk4
     glib
     wrapGAppsHook
     gobject-introspection
@@ -17,6 +18,7 @@ python3.pkgs.buildPythonApplication {
     intltool
     file
     gtk3
+    gtk4
     glib
     gobject-introspection
     wrapGAppsHook
@@ -25,6 +27,7 @@ python3.pkgs.buildPythonApplication {
     distutils_extra
     setuptools
     pygobject3
+    pygobject4
     pillow
     dbus-python
     pycairo
@@ -34,8 +37,6 @@ python3.pkgs.buildPythonApplication {
   python = python3;
   dbus_python = python3Packages.dbus-python;
   meta = {
-    homepage = https://github.com/trizen/oblogout-py3;
-    description = "A graphical session logout utility";
     maintainers = with maintainers; [ trizen ];
   };
   dontUnpack = true;

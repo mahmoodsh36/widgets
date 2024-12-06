@@ -8,6 +8,7 @@ pkgs.mkShell {
     gtk-layer-shell
     (python3.withPackages (p: with p; [
       pygobject3
+      # pygobject
       pydbus
     ]))
   ];

@@ -1,0 +1,60 @@
+@define-color main-color #2e2e2e;
+@define-color secondary-color red;
+
+/* window style */
+window {
+    background-color: #2e2e2e;
+    border-radius: 10px;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+/* style the individual rows in the listbox */
+treeview {
+    background-color: #333;
+    color: #fff;
+    padding: 12px 15px;
+    border-bottom: 1px solid #444;
+    transition: background-color 0.3s ease;
+}
+
+/* on hover, change the background color of the row */
+treeview:hover {
+    background-color: @secondary-color;
+}
+
+/* style for activatable rows (when selected or clickable) */
+treeview.activatable:selected {
+    background-color: #00cc77;
+}
+
+/* remove the bottom border from the last row */
+treeview:last-child {
+    border-bottom: none;
+}
+
+/* style the entry field */
+entry {
+    background-color: #111;
+    color: #fff;
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+/* Focus state for the entry field */
+entry:focus {
+    border: 2px solid #0077cc;
+}
+
+/* Label styling inside listbox rows */
+treeview label {
+    font-family: 'Arial', sans-serif;
+    font-size: 16px;
+}
+
+button.toggle {
+    margin: 2px;
+}
+button.toggle:checked {
+    color: red;
+}
