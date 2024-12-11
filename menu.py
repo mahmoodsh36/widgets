@@ -7,7 +7,6 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, Gio
 from pathlib import Path
 
-
 class DMenuPopup(Gtk.Window):
     def __init__(self, items=None):
         super().__init__()
@@ -85,7 +84,6 @@ class DMenuPopup(Gtk.Window):
                 print("")
             self.destroy()
 
-
 def read_stdin():
     """read items from stdin, one per line. returns an empty list if no input is available."""
     items = []
@@ -93,7 +91,6 @@ def read_stdin():
         for line in sys.stdin:
             items.append(line.strip())
     return items
-
 
 if __name__ == "__main__":
     items = read_stdin()

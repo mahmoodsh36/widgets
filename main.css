@@ -1,5 +1,6 @@
 @define-color main-color #2e2e2e;
-@define-color secondary-color red;
+@define-color secondary-color crimson;
+
 
 /* window style */
 window {
@@ -56,5 +57,9 @@ button.toggle {
     margin: 2px;
 }
 button.toggle:checked {
-    color: red;
+    color: @secondary-color;
+}
+
+scale trough highlight {
+    background: @secondary-color;
 }

@@ -2,8 +2,13 @@ import subprocess
 import re
 from datetime import datetime
 
+import gi
+gi.require_version('Gtk', '3.0')
+gi.require_version('GtkLayerShell', '0.1')
 from gi.repository import Gtk, Gdk, GtkLayerShell, GLib, Gio
+
 import hyprland
+import pulseaudio
 
 class VolumeSlider(Gtk.Box):
     def __init__(self):
@@ -15,20 +20,22 @@ class VolumeSlider(Gtk.Box):
         self.scale.set_draw_value(True)
         self.scale.set_value_pos(Gtk.PositionType.LEFT)
         self.scale.set_size_request(200, -1)
-        self.scale.connect("value-changed", lambda x: print(self.scale.get_value()))
-        self.scale.set_value(20)
+        self.scale.connect(
+            "value-changed",
+            lambda x: pulseaudio.set_default_sink_volume(int(self.scale.get_value()))
+        )
         self.pack_start(self.icon, False, False, 0)
         self.pack_start(self.scale, False, False, 0)
 
 class SystemBar(Gtk.Window):
     def __init__(self):
         super().__init__()
-        screen = Gdk.Screen.get_default()
-        width = screen.get_width()
-        self.set_size_request(width, -1)
+        # screen = Gdk.Screen.get_default()
+        # width = screen.get_width()
+        # self.set_size_request(width, -1)
+        # self.set_vexpand(False)
+        # self.set_hexpand(False)
         self.set_title("SystemBar")
-        self.set_vexpand(False)
-        self.set_hexpand(False)
 
         # initialize gtk layer shell
         GtkLayerShell.init_for_window(self)
@@ -47,7 +54,7 @@ class SystemBar(Gtk.Window):
         self.box.pack_start(self.workspace_box, False, False, 0)
 
         # window title label
-        self.main_label = Gtk.Label(label="Window Title")
+        self.main_label = Gtk.Label(label="track")
         self.box.pack_start(self.main_label, True, True, 0)
 
         # initialize workspace buttons
@@ -64,13 +71,22 @@ class SystemBar(Gtk.Window):
 
         # periodic updates
         GLib.timeout_add_seconds(1, self.update_date)
-        GLib.timeout_add_seconds(1, self.update_current_workspace)
+        GLib.timeout_add_seconds(0.3, self.update_track_text)
 
         # hyprland listener for workspace changes
-        def handler(event_line):
+        def hyprland_handler(event_line):
             if event_line.startswith('workspace>>'):
                 GLib.idle_add(lambda: (self.update_workspace_buttons(), self.show_all()))
-        hyprland.add_listener(handler)
+        hyprland.add_listener(hyprland_handler)
+
+        self.update_volume()
+        # pulseaudio listen for volume changes
+        def pulseaudio_handler(event_line):
+            GLib.idle_add(lambda: self.update_volume())
+        pulseaudio.add_listener(pulseaudio_handler)
+
+    def update_volume(self):
+        self.volume_slider.scale.set_value(int(pulseaudio.get_default_sink_volume()))
 
     def update_workspace_buttons(self):
         """fetch the current workspace information and create buttons for each workspace."""
@@ -111,13 +127,13 @@ class SystemBar(Gtk.Window):
         """handle workspace button clicks and switch workspace."""
         subprocess.run(["hyprctl", "dispatch", "workspace", str(workspace_id)])
 
-    def update_current_workspace(self):
+    def update_track_text(self):
         """update the current workspace label and button state."""
-        result = subprocess.run(["current_mpv_track_more.sh"], capture_output=True, text=True, shell=True)
+        result = subprocess.run(["current_mpv_track_more.sh"],
+                                capture_output=True, text=True, shell=True)
         if result:
             self.main_label.set_text(result.stdout)
-
-        return True  # Keep the timeout running
+        return True # keep the timeout running
 
     def get_current_workspace_from_hyprland(self):
         """get the current workspace using hyprland IPC."""
@@ -128,8 +144,8 @@ class SystemBar(Gtk.Window):
     def update_date(self):
         """update the date label."""
         now = datetime.now()
-        self.date_label.set_text(now.strftime("%Y-%m-%d %H:%M:%S"))
-        return True  # Keep updating every second
+        self.date_label.set_text(now.strftime("%a %H:%M:%S %Y-%m-%d"))
+        return True # keep updating every second
 
 if __name__ == "__main__":
     window = SystemBar()
