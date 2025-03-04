@@ -6,9 +6,11 @@ pkgs.mkShell {
   buildInputs = with pkgs; [
     gtk3
     gtk-layer-shell
+    # gtk4-layer-shell
+    # gtk4
+    gobject-introspection
     (python3.withPackages (p: with p; [
       pygobject3
-      # pygobject
       pydbus
     ]))
   ];

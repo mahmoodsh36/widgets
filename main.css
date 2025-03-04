@@ -1,7 +1,6 @@
 @define-color main-color #2e2e2e;
 @define-color secondary-color crimson;
 
-
 /* window style */
 window {
     background-color: #2e2e2e;
@@ -22,18 +21,19 @@ treeview {
 treeview:hover {
     background-color: @secondary-color;
 }
-
+treeview:selected {
+    background-color: @secondary-color;
+}
 /* style for activatable rows (when selected or clickable) */
 treeview.activatable:selected {
     background-color: #00cc77;
 }
-
 /* remove the bottom border from the last row */
 treeview:last-child {
     border-bottom: none;
 }
 
-/* style the entry field */
+/* style the entry (search) field */
 entry {
     background-color: #111;
     color: #fff;
@@ -41,23 +41,28 @@ entry {
     padding: 10px;
     border-radius: 5px;
 }
-
-/* Focus state for the entry field */
 entry:focus {
     border: 2px solid #0077cc;
 }
 
-/* Label styling inside listbox rows */
+/* label styling inside listbox rows */
 treeview label {
     font-family: 'Arial', sans-serif;
     font-size: 16px;
 }
 
-button.toggle {
+button {
     margin: 2px;
+    min-width: 30px;
+    min-height: 30px;
+    padding: 0px;
+    border-radius: 50%;
+    border: 1px solid black;
 }
-button.toggle:checked {
+button.highlighted {
     color: @secondary-color;
+    border: 3px solid black;
+    margin: 0px;
 }
 
 scale trough highlight {

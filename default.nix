@@ -5,6 +5,7 @@ in
 with pkgs;
 python3.pkgs.buildPythonApplication {
   pname = "widgets";
+  version = "1.0";
   src = src;
   buildInputs = [
     gtk3
@@ -27,7 +28,6 @@ python3.pkgs.buildPythonApplication {
     distutils_extra
     setuptools
     pygobject3
-    pygobject4
     pillow
     dbus-python
     pycairo

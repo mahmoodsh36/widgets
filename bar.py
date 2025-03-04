@@ -1,6 +1,8 @@
+#!/usr/bin/env python3
 import subprocess
 import re
 from datetime import datetime
+import random
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -27,6 +29,14 @@ class VolumeSlider(Gtk.Box):
         self.pack_start(self.icon, False, False, 0)
         self.pack_start(self.scale, False, False, 0)
 
+class BrightnessSlider(Gtk.VolumeButton):
+    def __init__(self):
+        super(BrightnessSlider, self).__init__(orientation=Gtk.Orientation.VERTICAL)
+        self.connect("value-changed", self.on_changed)
+
+    def on_changed(self, volumebutton, value):
+        print("value: %0.2f" % (value))
+
 class SystemBar(Gtk.Window):
     def __init__(self):
         super().__init__()
@@ -35,7 +45,7 @@ class SystemBar(Gtk.Window):
         # self.set_size_request(width, -1)
         # self.set_vexpand(False)
         # self.set_hexpand(False)
-        self.set_title("SystemBar")
+        self.set_title("bar")
 
         # initialize gtk layer shell
         GtkLayerShell.init_for_window(self)
@@ -69,8 +79,17 @@ class SystemBar(Gtk.Window):
         self.volume_slider = VolumeSlider()
         self.box.pack_end(self.volume_slider, False, False, 0)
 
+        # add battery label
+        self.bat_label = Gtk.Label(label="battery")
+        self.box.pack_end(self.bat_label, False, False, 0)
+
+        # brightness slider
+        # self.brightness_slider = BrightnessSlider()
+        # self.box.pack_end(self.brightness_slider, False, False, 0)
+
         # periodic updates
         GLib.timeout_add_seconds(1, self.update_date)
+        GLib.timeout_add_seconds(1, self.update_battery)
         GLib.timeout_add_seconds(0.3, self.update_track_text)
 
         # hyprland listener for workspace changes
@@ -103,13 +122,14 @@ class SystemBar(Gtk.Window):
         current_workspace = self.get_current_workspace_from_hyprland()
 
         # add new buttons for each workspace
-        for workspace in workspaces:
-            button = Gtk.ToggleButton(label=str(workspace['id']))
-            button.set_active(workspace['id'] == current_workspace)
+        for i, workspace in enumerate(workspaces):
+            button = Gtk.Button(label=str(workspace['id']))
             button.connect("clicked", self.on_workspace_button_clicked, workspace['id'])
-
             self.workspace_buttons.append(button)
             self.workspace_box.pack_start(button, False, False, 0)
+            if current_workspace == workspace['id']:
+                button_context = button.get_style_context()
+                button_context.add_class("highlighted")
 
         self.workspace_box.show_all()
 
@@ -132,7 +152,7 @@ class SystemBar(Gtk.Window):
         result = subprocess.run(["current_mpv_track_more.sh"],
                                 capture_output=True, text=True, shell=True)
         if result:
-            self.main_label.set_text(result.stdout)
+            self.main_label.set_text(result.stdout[:80])
         return True # keep the timeout running
 
     def get_current_workspace_from_hyprland(self):
@@ -145,6 +165,12 @@ class SystemBar(Gtk.Window):
         """update the date label."""
         now = datetime.now()
         self.date_label.set_text(now.strftime("%a %H:%M:%S %Y-%m-%d"))
+        return True # keep updating every second
+
+    def update_battery(self):
+        """update the battery label."""
+        out = subprocess.check_output("acpi | grep -v ' 0%'", shell=True).decode()[:-1].split(', ')[1]
+        self.bat_label.set_text('BAT ' + out)
         return True # keep updating every second
 
 if __name__ == "__main__":
