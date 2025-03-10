@@ -18,9 +18,9 @@ treeview {
 }
 
 /* on hover, change the background color of the row */
-treeview:hover {
-    background-color: @secondary-color;
-}
+/* treeview:hover { */
+/*     background-color: @secondary-color; */
+/* } */
 treeview:selected {
     background-color: @secondary-color;
 }

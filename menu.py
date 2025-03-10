@@ -19,7 +19,7 @@ class DMenuPopup(Gtk.Window):
 
         self.entry = Gtk.Entry()
         self.entry.connect("changed", self.on_entry_changed)
-        self.entry.set_placeholder_text("Search...")
+        self.entry.set_placeholder_text("search...")
 
         # use treeview instead of listbox
         self.liststore = Gtk.ListStore(str)
@@ -46,45 +46,43 @@ class DMenuPopup(Gtk.Window):
         box.pack_start(self.scrollable, True, True, 0)
         self.add(box)
 
+        # handle keyboard input
         self.connect("key-press-event", self.on_key_press)
 
         # may not be needed
         self.present()
         self.entry.grab_focus()
 
-        self.treeview.connect("button-press-event", self.on_item_clicked) # connect to button-press-event
-        self.treeview.connect("row-activated", self.on_item_selected) # keep double click for other uses if needed
+        # exit with current row on single click
+        self.treeview.connect("button-press-event", self.on_item_clicked)
+        # keep double click anyway?
+        self.treeview.connect("row-activated", self.on_item_selected)
+
+        # select row on hover
+        self.treeview.set_events(Gdk.EventMask.POINTER_MOTION_MASK)
+        self.treeview.connect("motion-notify-event", self.on_hover)
+
+        # select first row by default
+        self.next_row()
 
     def on_item_clicked(self, treeview, event):
-        """Handle single clicks."""
-        if event.button == 1:  # Left mouse button
+        """handle single clicks."""
+        if event.button == 1:  # left mouse button
             x = int(event.x)
             y = int(event.y)
             path_tuple = treeview.get_path_at_pos(x, y)
 
-            if path_tuple: #check if a row was clicked
-                path = path_tuple[0] # Extract the TreePath
-                if path: #check if path is valid
+            if path_tuple: # check if a row was clicked
+                path = path_tuple[0] # extract the TreePath
+                if path: # check if path is valid
                     treeiter = treeview.get_model().get_iter(path)
-                    if treeiter: #check if treeiter is valid
+                    if treeiter: # check if treeiter is valid
                         selection = self.treeview.get_selection()
                         self.treeview.set_cursor(path, None, False)
                         selection.select_iter(treeiter)
                         self.on_item_selected(treeview, path, None)
-                        return True  # Event handled
-            return False  # Let TreeView handle if no row clicked
-
-    def on_item_selected(self, treeview, path, column):
-        """Handle item selection."""
-        if path: #check if path is valid
-            model = treeview.get_model()
-            treeiter = model.get_iter(path) #get treeiter from path
-            if treeiter: #check if treeiter is valid
-                item = model[treeiter][0]
-                print(item)
-                self.destroy()
-
-    # ... (rest of your code)
+                        return True # event handled
+            return False # let TreeView handle if no row clicked
 
     def update_items(self, items):
         """update the treeview with the filtered items."""
@@ -101,6 +99,15 @@ class DMenuPopup(Gtk.Window):
             self.filtered_items = self.items[:]
         self.update_items(self.filtered_items)
 
+    def on_hover(self, widget, event):
+        """Handle hover event over treeview rows."""
+        path_tuple = widget.get_path_at_pos(int(event.x), int(event.y))
+
+        if path_tuple: # check if hovering over a row
+            path = path_tuple[0]
+            self.treeview.set_cursor(path, None, False)
+        return False # let other handlers process the event
+
     def on_item_selected(self, treeview, path, column):
         """handle the item selection."""
         model = treeview.get_model()
@@ -108,29 +115,38 @@ class DMenuPopup(Gtk.Window):
         print(item)
         self.destroy()
 
+    def next_row(self):
+        selection = self.treeview.get_selection()
+        model, treeiter = selection.get_selected()
+        if treeiter:
+            treeiter = model.iter_next(treeiter)
+        else: # no selection, jump to first item
+            treeiter = model.get_iter_first()
+        if treeiter:
+            self.treeview.set_cursor(model.get_path(treeiter), None, False) # highlight row
+            self.scroll_to_row(treeiter)
+
+    def prev_row(self):
+        selection = self.treeview.get_selection()
+        model, treeiter = selection.get_selected()
+        if treeiter:
+            treeiter = model.iter_previous(treeiter)
+        else: # no selection, jump to last item
+            treeiter = model.get_iter_last()
+        if treeiter:
+            self.treeview.set_cursor(model.get_path(treeiter), None, False)
+            self.scroll_to_row(treeiter)
+
     def on_key_press(self, widget, event):
         """handle key press events."""
 
         selection = self.treeview.get_selection()
         model, treeiter = selection.get_selected()
-        if event.state & Gdk.ModifierType.CONTROL_MASK:  # Check for Ctrl key press
-            if event.keyval == Gdk.KEY_n:  # C-n
-                if treeiter:
-                    treeiter = model.iter_next(treeiter)
-                else: #no selection, jump to first item
-                    treeiter = model.get_iter_first()
-                if treeiter:
-                    self.treeview.set_cursor(model.get_path(treeiter), None, False) #highlight row
-                    self.scroll_to_row(treeiter)
-            elif event.keyval == Gdk.KEY_p:  # C-p
-                if treeiter:
-                    treeiter = model.iter_previous(treeiter)
-                else: #no selection, jump to last item
-                    treeiter = model.get_iter_last()
-                if treeiter:
-                    self.treeview.set_cursor(model.get_path(treeiter), None, False)
-                    self.scroll_to_row(treeiter)
-            print('hi')
+        if event.state & Gdk.ModifierType.CONTROL_MASK:
+            if event.keyval == Gdk.KEY_n: # C-n
+                self.next_row()
+            elif event.keyval == Gdk.KEY_p: # C-p
+                self.prev_row()
             return True # prevent default behavior of C-n/C-p
 
         if event.keyval == Gdk.KEY_Escape:
@@ -147,10 +163,10 @@ class DMenuPopup(Gtk.Window):
             self.destroy()
 
     def scroll_to_row(self, treeiter):
-        """Scroll the TreeView to make the selected row visible."""
-        if treeiter:  # Check if treeiter is valid (not None)
-            path = self.treeview.get_model().get_path(treeiter) # get path from the model
-            self.treeview.scroll_to_cell(path, None, True, 0.0, 0.0)  # Center vertically
+        """scroll the TreeView to make the selected row visible."""
+        if treeiter:
+            path = self.treeview.get_model().get_path(treeiter)
+            self.treeview.scroll_to_cell(path, None, True, 0.0, 0.0)
 
 def read_stdin():
     """read items from stdin, one per line. returns an empty list if no input is available."""
