@@ -11,6 +11,7 @@ from gi.repository import Gtk, Gdk, GtkLayerShell, GLib, Gio
 
 import hyprland
 import pulseaudio
+from bar_menu import PopupMenu
 
 class VolumeSlider(Gtk.Box):
     def __init__(self):
@@ -71,6 +72,14 @@ class SystemBar(Gtk.Window):
         self.workspace_buttons = []
         self.update_workspace_buttons()
 
+        menu_button = Gtk.Button()
+        icon = Gtk.Image.new_from_icon_name("open-menu", Gtk.IconSize.BUTTON)
+        menu_button.set_image(icon)
+        menu_button.set_always_show_image(True)
+        menu_button.get_style_context().add_class("bar_button")
+        menu_button.connect("clicked", lambda x: PopupMenu())
+        self.box.pack_end(menu_button, False, False, 0)
+
         # add date label
         self.date_label = Gtk.Label(label="Date")
         self.box.pack_end(self.date_label, False, False, 0)
@@ -104,6 +113,9 @@ class SystemBar(Gtk.Window):
             GLib.idle_add(lambda: self.update_volume())
         pulseaudio.add_listener(pulseaudio_handler)
 
+    def show_menu():
+        pass
+
     def update_volume(self):
         self.volume_slider.scale.set_value(int(pulseaudio.get_default_sink_volume()))
 
@@ -125,6 +137,7 @@ class SystemBar(Gtk.Window):
         for i, workspace in enumerate(workspaces):
             button = Gtk.Button(label=str(workspace['id']))
             button.connect("clicked", self.on_workspace_button_clicked, workspace['id'])
+            button.get_style_context().add_class("bar_button")
             self.workspace_buttons.append(button)
             self.workspace_box.pack_start(button, False, False, 0)
             if current_workspace == workspace['id']:

@@ -5,48 +5,45 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("GtkLayerShell", "0.1")
 from gi.repository import Gtk, GtkLayerShell, Gdk
 
-class PopupWindow(Gtk.Window):
+class PopupMenu(Gtk.Window):
     def __init__(self):
         super().__init__(title="System Menu")
         self.set_default_size(250, 400)
         self.set_border_width(10)
+        self.set_type_hint(Gdk.WindowTypeHint.POPUP_MENU)
 
-        # Make this a layer shell surface
+        # make this a layer shell surface
         GtkLayerShell.init_for_window(self)
         GtkLayerShell.set_layer(self, GtkLayerShell.Layer.TOP)
         GtkLayerShell.set_anchor(self, GtkLayerShell.Edge.TOP, True)
         GtkLayerShell.set_anchor(self, GtkLayerShell.Edge.RIGHT, True)
         GtkLayerShell.auto_exclusive_zone_enable(self)
 
-        # Close when clicking outside or pressing ESC
+        # close when clicking outside or pressing ESC
         self.connect("focus-out-event", self.on_focus_lost)
         self.connect("key-press-event", self.on_key_press)
         self.set_events(Gdk.EventMask.ALL_EVENTS_MASK)
 
-        # Make sure it behaves like a popup
-        self.set_type_hint(Gdk.WindowTypeHint.POPUP_MENU)
-
-        # Main vertical layout
+        # main vertical layout
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         self.add(vbox)
 
-        # Close Button
         close_button = Gtk.Button(label="Close")
         close_button.connect("clicked", self.on_close_clicked)
         vbox.pack_start(close_button, False, False, 0)
 
-        # Wi-Fi Section
+        # wi-fi section
         self.wifi_expander = Gtk.Expander(label="Wi-Fi")
         wifi_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
         self.wifi_expander.add(wifi_box)
         vbox.pack_start(self.wifi_expander, False, False, 0)
 
-        # Wi-Fi Toggle Button
+        # wi-fi toggle button
         self.wifi_toggle = Gtk.ToggleButton(label="Wi-Fi Off")
         self.wifi_toggle.connect("toggled", self.toggle_wifi)
         wifi_box.pack_start(self.wifi_toggle, False, False, 0)
 
-        # Refresh Wi-Fi Networks Button
+        # refresh wi-fi networks button
         wifi_refresh = Gtk.Button(label="Refresh Wi-Fi")
         wifi_refresh.connect("clicked", self.load_wifi_networks)
         wifi_box.pack_start(wifi_refresh, False, False, 0)
@@ -54,13 +51,13 @@ class PopupWindow(Gtk.Window):
         self.wifi_list = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
         wifi_box.pack_start(self.wifi_list, False, False, 0)
 
-        # Bluetooth Section
+        # bluetooth section
         self.bt_expander = Gtk.Expander(label="Bluetooth")
         bt_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
         self.bt_expander.add(bt_box)
         vbox.pack_start(self.bt_expander, False, False, 0)
 
-        # Refresh Bluetooth Devices Button
+        # refresh bluetooth devices button
         bt_refresh = Gtk.Button(label="Refresh Bluetooth")
         bt_refresh.connect("clicked", self.load_bluetooth_devices)
         bt_box.pack_start(bt_refresh, False, False, 0)
@@ -68,20 +65,20 @@ class PopupWindow(Gtk.Window):
         self.bt_list = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
         bt_box.pack_start(self.bt_list, False, False, 0)
 
-        # Apps Section
+        # apps section
         self.apps_expander = Gtk.Expander(label="Apps")
         apps_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
         self.apps_expander.add(apps_box)
         vbox.pack_start(self.apps_expander, False, False, 0)
 
-        # App launch buttons
+        # app launch buttons
         apps = [("Emacs", "emacs"), ("Firefox", "firefox"), ("Xournal++", "xournalpp")]
         for name, cmd in apps:
             button = Gtk.Button(label=name)
             button.connect("clicked", self.launch_app, cmd)
             apps_box.pack_start(button, False, False, 0)
 
-        # Brightness & Volume Sliders
+        # brightness & volume sliders
         self.brightness_slider = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL)
         self.brightness_slider.set_range(0, 100)
         self.brightness_slider.set_value(self.get_brightness())
@@ -105,27 +102,23 @@ class PopupWindow(Gtk.Window):
         self.grab_add()
 
     def on_focus_lost(self, widget, event=None):
-        """Close when clicking outside the popup or losing focus."""
         self.destroy()
 
     def on_key_press(self, widget, event):
-        """Close when pressing ESC."""
         if event.keyval == Gdk.KEY_Escape:
             self.destroy()
 
     def on_close_clicked(self, button):
-        """Close when clicking the close button."""
         self.destroy()
 
     def load_wifi_networks(self, button):
-        """Load available Wi-Fi networks using iwctl."""
         for child in self.wifi_list.get_children():
             self.wifi_list.remove(child)
 
         try:
-            subprocess.run(["iwctl", "station", "wlan0", "scan"], check=True)
+            # subprocess.run(["iwctl", "station", "wlan0", "scan"], check=True)
             output = subprocess.check_output(["iwctl", "station", "wlan0", "get-networks"], stderr=subprocess.DEVNULL)
-            networks = output.decode().strip().split("\n")[1:]  # Skip header
+            networks = output.decode().strip().split("\n")[1:] # skip header
 
             for line in networks:
                 ssid = line.strip()
@@ -134,7 +127,7 @@ class PopupWindow(Gtk.Window):
                     self.wifi_list.pack_start(label, False, False, 0)
 
         except Exception:
-            self.wifi_list.pack_start(Gtk.Label(label="Error: iwctl not found"), False, False, 0)
+            self.wifi_list.pack_start(Gtk.Label(label="error: iwctl not found"), False, False, 0)
 
         self.wifi_list.show_all()
 
@@ -153,17 +146,14 @@ class PopupWindow(Gtk.Window):
                     self.bt_list.pack_start(label, False, False, 0)
 
         except Exception:
-            self.bt_list.pack_start(Gtk.Label(label="Error: bluetoothctl not found"), False, False, 0)
+            self.bt_list.pack_start(Gtk.Label(label="error: bluetoothctl not found"), False, False, 0)
 
         self.bt_list.show_all()
 
     def toggle_wifi(self, button):
-        """Turn Wi-Fi on/off using systemd service for iwd."""
         if button.get_active():
-            subprocess.run(["systemctl", "start", "iwd"], check=False)
             button.set_label("Wi-Fi On")
         else:
-            subprocess.run(["systemctl", "stop", "iwd"], check=False)
             button.set_label("Wi-Fi Off")
 
     def launch_app(self, button, command):
@@ -171,29 +161,18 @@ class PopupWindow(Gtk.Window):
         subprocess.Popen(command, shell=True)
 
     def get_brightness(self):
-        """Get screen brightness (default 50 if command fails)."""
-        try:
-            return int(subprocess.check_output("brightnessctl g", shell=True)) / 255 * 100
-        except Exception:
-            return 50
+        return 50
 
     def set_brightness(self, slider):
-        """Set screen brightness using brightnessctl."""
-        value = int(slider.get_value() / 100 * 255)
-        subprocess.run(f"brightnessctl s {value}", shell=True)
+        pass
 
     def get_volume(self):
-        """Get volume level (default 50 if command fails)."""
-        try:
-            return int(subprocess.check_output("pamixer --get-volume", shell=True).strip())
-        except Exception:
-            return 50
+        return 50
 
     def set_volume(self, slider):
-        """Set volume using pamixer."""
-        value = int(slider.get_value())
-        subprocess.run(f"pamixer --set-volume {value}", shell=True)
+        pass
 
-win = PopupWindow()
-win.connect("destroy", Gtk.main_quit)
-Gtk.main()
+if __name__ == '__main__':
+    win = PopupMenu()
+    win.connect("destroy", Gtk.main_quit)
+    Gtk.main()

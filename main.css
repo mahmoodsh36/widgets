@@ -18,9 +18,6 @@ treeview {
 }
 
 /* on hover, change the background color of the row */
-/* treeview:hover { */
-/*     background-color: @secondary-color; */
-/* } */
 treeview:selected {
     background-color: @secondary-color;
 }
@@ -51,7 +48,7 @@ treeview label {
     font-size: 16px;
 }
 
-button {
+.bar_button {
     margin: 2px;
     min-width: 30px;
     min-height: 30px;
@@ -59,12 +56,13 @@ button {
     border-radius: 50%;
     border: 1px solid black;
 }
-button.highlighted {
+.bar_button.highlighted {
     color: @secondary-color;
     border: 3px solid black;
     margin: 0px;
 }
 
+/* for volume scale etc */
 scale trough highlight {
     background: @secondary-color;
 }
