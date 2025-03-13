@@ -77,7 +77,8 @@ class SystemBar(Gtk.Window):
         menu_button.set_image(icon)
         menu_button.set_always_show_image(True)
         menu_button.get_style_context().add_class("bar_button")
-        menu_button.connect("clicked", lambda x: PopupMenu())
+        self.popup = None
+        menu_button.connect("clicked", self.toggle_popup)
         self.box.pack_end(menu_button, False, False, 0)
 
         # add date label
@@ -113,8 +114,14 @@ class SystemBar(Gtk.Window):
             GLib.idle_add(lambda: self.update_volume())
         pulseaudio.add_listener(pulseaudio_handler)
 
-    def show_menu():
-        pass
+    def toggle_popup(self, button):
+        print('test')
+        if self.popup and self.popup.is_visible():
+            self.popup.destroy()
+            self.popup = None
+        else:
+            self.popup = PopupMenu()
+            self.popup.show_all()
 
     def update_volume(self):
         self.volume_slider.scale.set_value(int(pulseaudio.get_default_sink_volume()))

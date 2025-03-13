@@ -3,21 +3,35 @@ import subprocess
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("GtkLayerShell", "0.1")
-from gi.repository import Gtk, GtkLayerShell, Gdk
+from gi.repository import Gtk, GtkLayerShell, Gdk, Gio
 
 class PopupMenu(Gtk.Window):
     def __init__(self):
         super().__init__(title="System Menu")
-        self.set_default_size(250, 400)
+        # self.set_default_size(300, 400)
+        self.set_size_request(300, 400)
         self.set_border_width(10)
         self.set_type_hint(Gdk.WindowTypeHint.POPUP_MENU)
+        self.get_style_context().add_class("popup")
 
         # make this a layer shell surface
         GtkLayerShell.init_for_window(self)
         GtkLayerShell.set_layer(self, GtkLayerShell.Layer.TOP)
         GtkLayerShell.set_anchor(self, GtkLayerShell.Edge.TOP, True)
         GtkLayerShell.set_anchor(self, GtkLayerShell.Edge.RIGHT, True)
+        GtkLayerShell.set_margin(self, GtkLayerShell.Edge.TOP, 10)
+        GtkLayerShell.set_margin(self, GtkLayerShell.Edge.RIGHT, 10)
         GtkLayerShell.auto_exclusive_zone_enable(self)
+        # ✅ Ensure the popup does not steal focus
+        self.set_accept_focus(False)
+        self.set_focus_on_map(False)  # Prevent auto-focusing
+        self.set_skip_taskbar_hint(True)
+        self.set_keep_above(True)  # Keep it above, but not block input
+
+        scrolled_window = Gtk.ScrolledWindow()
+        scrolled_window.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        self.add(scrolled_window)
+        scrolled_window.set_overlay_scrolling(False) # this may be better
 
         # close when clicking outside or pressing ESC
         self.connect("focus-out-event", self.on_focus_lost)
@@ -26,11 +40,12 @@ class PopupMenu(Gtk.Window):
 
         # main vertical layout
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
-        self.add(vbox)
+        scrolled_window.add(vbox)
 
         close_button = Gtk.Button(label="Close")
         close_button.connect("clicked", self.on_close_clicked)
         vbox.pack_start(close_button, False, False, 0)
+        close_button.set_halign(Gtk.Align.CENTER)
 
         # wi-fi section
         self.wifi_expander = Gtk.Expander(label="Wi-Fi")
@@ -97,9 +112,8 @@ class PopupMenu(Gtk.Window):
 
         self.show_all()
 
-        # Grab focus when created
-        self.grab_focus()
-        self.grab_add()
+        # grab focus when created
+        # self.grab_focus()
 
     def on_focus_lost(self, widget, event=None):
         self.destroy()
@@ -167,12 +181,22 @@ class PopupMenu(Gtk.Window):
         pass
 
     def get_volume(self):
-        return 50
+        return int(subprocess.check_output(
+            r"pactl get-sink-volume @DEFAULT_SINK@ | grep -Po '\d+(?=%)' | head -n 1",
+            shell=True).strip())
 
     def set_volume(self, slider):
-        pass
+        perc = slider.get_value()
+        subprocess.run(
+            f"pactl set-sink-volume @DEFAULT_SINK@ {perc}%",
+            shell=True)
 
 if __name__ == '__main__':
     win = PopupMenu()
     win.connect("destroy", Gtk.main_quit)
+    css_provider = Gtk.CssProvider()
+    css_provider.load_from_file(Gio.File.new_for_path('main.css'))
+    Gtk.StyleContext.add_provider_for_screen(
+        Gdk.Screen.get_default(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER
+    )
     Gtk.main()

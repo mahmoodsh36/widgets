@@ -8,6 +8,13 @@ window {
     box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.6);
 }
 
+.popup {
+    background-color: rgba(40, 40, 40, 0.95);
+    border: 2px solid @secondary-color;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.5);
+}
+
 /* style the individual rows in the listbox */
 treeview {
     background-color: #333;
